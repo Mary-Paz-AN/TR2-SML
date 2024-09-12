@@ -56,11 +56,29 @@ fun addRegister () =
 
         val line = "\n" ^ account ^ "," ^ date ^ "," ^ transactionType ^ "," ^ amount ^ "," ^ destinationAccount ^ "\n";
         val temp = writeFileA path line;
+
+        val _ = printLine "Registro añadido exitosamente...";
+        val _ = printLine "Volcien"
     in 
         ()
     end;
 
-fun cleanIndex () = (print "Borrando todo\n");
+fun cleanIndex () =
+    let
+        val _ = printLine "Ingrese la ruta del archivo (.csv):";
+        val temp = valOf(TextIO.inputLine TextIO.stdIn);
+        val path = limpiar_cambios_linea temp;
+        
+        (*Reescribe le archivo*)
+        val outputFile = TextIO.openOut path
+        val _ = TextIO.output (outputFile, "account_id,transaction_date,transaction_type,amount,destination_account_id")
+        val _ = TextIO.closeOut outputFile
+        
+        val _ = printLine "Se esta eliminando el indice...";
+        val _ = printLine "Se eliminó el indice correcamente."
+    in 
+        ()
+    end;
 
 fun showTop () = (print "Mostrando Top\n");
 
