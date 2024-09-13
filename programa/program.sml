@@ -99,8 +99,107 @@ fun cleanIndex () =
         ()
     end;
 
-(*Muestra un top de montos indicados por el usuario*)
-fun showTop () = (print "Mostrando Top\n");
+(* Función para convertir el monto a real*)
+fun amountStrInt transaccion = 
+    case Real.fromString(List.nth(transaccion, 3)) of
+         SOME(monto) => monto
+       | NONE => 0.0;  
+
+(* Función para imprimir una fila de la lista *)
+fun printRow row =
+    let
+        val rowStr = String.concatWith "\t" row
+    in
+        print (rowStr ^ "\n")
+    end;
+
+(* Función para imprimir toda la lista de listas *)
+fun printTable listList =
+    let
+        fun printRows [] = ()
+          | printRows (row::rows) =
+            (printRow row; printRows rows)
+    in
+        printRows listList
+    end;
+
+(*El codigo del merge fue sacado de un repo en github y fue modificado para este programa: https://github.com/amir734jj/SML-NJ-sorting-algorithms/blob/master/sml-sort.sml*)
+(* Función merge que combina dos listas ordenadas en orden descendente por monto *)
+fun merge([], ys) = ys
+  | merge(xs, []) = xs
+  | merge(x::xs, y::ys) =
+      if amountStrInt x >= amountStrInt y then
+        x :: merge(xs, y::ys)
+      else
+        y :: merge(x::xs, ys)
+
+(* Función split que divide una lista en dos mitades *)
+fun split [] = ([], [])
+  | split [a] = ([a], [])
+  | split (a::b::cs) =
+      let val (M, N) = split cs
+      in (a::M, b::N) end
+
+(* Función mergesort que ordena una lista en orden descendente por monto *)
+fun mergesort [] = []
+  | mergesort [a] = [a]
+  | mergesort L =
+      let val (M, N) = split L
+      in merge (mergesort M, mergesort N) end
+
+(* Encuentra los montos dentro del rango y los ordena descendientemente *)
+fun rangeAmountTransactions (transactions, minAmount, maxAmount) =
+  let
+    val minMaxTransactions = List.filter (fn tx =>  (minAmount <= (amountStrInt tx)) andalso ((amountStrInt tx) <= maxAmount))  transactions
+  in
+    minMaxTransactions
+  end;
+
+fun showTop () = 
+    let 
+        val _ = printLine "Ingrese la ruta del archivo (.csv): ";
+        val temp = valOf(TextIO.inputLine TextIO.stdIn);
+        val path = limpiar_cambios_linea temp;
+
+        val _ = printLine "Ingrese el monto maximo: ";
+        val temp = valOf(TextIO.inputLine TextIO.stdIn);
+        val maxStr = limpiar_cambios_linea temp;
+        val max = (case Real.fromString maxStr of
+                    SOME r => r
+                  | NONE => 0.0);
+
+        val _ = printLine "Ingrese el monto minimo: ";
+        val temp = valOf(TextIO.inputLine TextIO.stdIn);
+        val minStr = limpiar_cambios_linea temp;
+        val min = (case Real.fromString minStr of
+                    SOME r => r
+                  | NONE => 0.0);
+
+        (* Verifica si los montos son válidos *)
+        val _ = if max <= min then
+            (printLine "Máximo o mínimo inválido, vuelva a intentarlo";
+             showTop ())  (* Llamada recursiva *)
+        else
+            let
+                (* Lee las transacciones del archivo *)
+                val transactions = leerCsv path;
+
+                (* Filtra y ordena las transacciones por un rango mínimo y máximo *)
+                val minMaxTransactions = rangeAmountTransactions (transactions, min, max);
+
+                val listaOrdenada = mergesort minMaxTransactions;
+
+                (* Imprime los encabezados de la tabla *)
+                val _ = printLine ("\n" ^ "Origen" ^ "\t" ^ "Fecha" ^ "\t" ^ "\t" ^ "\t" ^ "Tipo" ^ "\t" ^ "\t" ^ "Monto" ^ "\t" ^ "Destino");
+
+                (* Imprime las transacciones en forma tabular *)
+                val _ = printTable listaOrdenada
+            in
+                ()
+            end
+    in
+        ()
+    end;
 
 (*Muestra un reporte de transacciones sospechosas*)
 fun suspiciousReport () = (print "Reporte sospechoso\n");
@@ -137,32 +236,16 @@ fun filterTransactions (account, transactions) =
     ) transactions
 
 
-(* Función para imprimir una fila de la lista *)
-fun printRow row =
-    let
-        val rowStr = String.concatWith "\t" row
-    in
-        print (rowStr ^ "\n")
-    end
-
-(* Función para imprimir toda la lista de listas *)
-fun printTable listList =
-    let
-        fun printRows [] = ()
-          | printRows (row::rows) =
-            (printRow row; printRows rows)
-    in
-        printRows listList
-    end
-
 (* Muestra las transacciones por la cuenta dada *)
 fun transactionsPerAccount () =
     let
         val _ = printLine "Ingrese la ruta del archivo (.csv): ";
-        val path = limpiar_cambios_linea (valOf (TextIO.inputLine TextIO.stdIn));
+        val temp = valOf(TextIO.inputLine TextIO.stdIn);
+        val path = limpiar_cambios_linea temp;
 
         val _ = printLine "Ingrese la cuenta: ";
-        val account = limpiar_cambios_linea (valOf (TextIO.inputLine TextIO.stdIn));
+        val temp = valOf(TextIO.inputLine TextIO.stdIn);
+        val account = limpiar_cambios_linea temp;
 
         (* Leer las transacciones del archivo *)
         val transactions = leerCsv path;
@@ -215,12 +298,6 @@ fun transactionsQuantity () =
     in
         ()
     end;
-
-(* Función para convertir el monto a real*)
-fun amountStrInt transaccion = 
-    case Real.fromString(List.nth(transaccion, 3)) of
-         SOME(monto) => monto
-       | NONE => 0.0;  
 
 (*Devuelve la transaccion con el monto mayor*)
 fun greaterAmountTransaction [] = []
